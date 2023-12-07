@@ -3,7 +3,6 @@
 // require("dotenv").config();
 
 // // ℹ️ Connects to the database
-require("./db");
 
 // // Handles http requests (express is node js framework)
 // // https://www.npmjs.com/package/express
@@ -22,6 +21,8 @@ require("./db");
 // require("./error-handling")(app);
 
 // module.exports = app;
+require("dotenv").config();
+require("./db");
 
 const express = require("express");
 const app = express();

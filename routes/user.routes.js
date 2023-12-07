@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const authMiddleware = require("../middlewares/auth.middleware");
 const userController = require("../controllers/user.controller");
 
 // User registration
@@ -8,16 +9,15 @@ router.post("/register", userController.register);
 // User login
 router.post("/login", userController.login);
 
-// Get user profile
-router.get("/profile/:userId", userController.getUserProfile);
+router.get("/profile/:userId", authMiddleware, userController.getUserProfile);
+router.put(
+  "/profile/:userId",
+  authMiddleware,
+  userController.updateUserProfile
+);
+router.post("/follow/:userId", authMiddleware, userController.followUser);
+router.post("/unfollow/:userId", authMiddleware, userController.unfollowUser);
 
-// Update user profile
-router.put("/prsofile/:userId", userController.updateUserProfile);
-
-// Follow another user
-router.post("/follow/:userId", userController.followUser);
-
-// Unfollow a user
-router.post("/unfollow/:userId", userController.unfollowUser);
+// Apply the middleware to routes that require authentication
 
 module.exports = router;

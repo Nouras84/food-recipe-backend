@@ -1,14 +1,17 @@
-const User = require("../models/User.model"); // Assuming your user model is named User.model.js
+const User = require("../models/User.model");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 // Function to handle user registration
 exports.register = async (req, res) => {
   try {
-    // Extract user details from req.body
-    // Example: const { username, email, password } = req.body;
-
-    // Implement registration logic here
-    // This could include hashing the password, saving the user to the database, etc.
-
+    const { username, email, password } = req.body;
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists " });
+    }
+    const newUser = new User({ username, email, password });
+    await newUser.save();
     res.status(201).json({ message: "User registered successfully" });
   } catch (error) {
     // Error handling
@@ -19,69 +22,137 @@ exports.register = async (req, res) => {
 // Function to handle user login
 exports.login = async (req, res) => {
   try {
-    // Extract login credentials from req.body
-    // Example: const { email, password } = req.body;
+    const { email, password } = req.body;
 
-    // Implement login logic here
-    // This could include verifying the user, checking the password, generating a token, etc.
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
 
-    res.json({ message: "Login successful", token: "YourTokenHere" });
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1h",
+    });
+
+    res.json({ message: "Login successful", token });
   } catch (error) {
     // Error handling
-    res.status(500).json({ message: "Error logging in" });
+    res.status(500).json({ message: "Error logging in", error: error.message });
   }
 };
 
 // Function to get user profile
 exports.getUserProfile = async (req, res) => {
   try {
-    // Extract user ID from req.params
-    // Example: const userId = req.params.userId;
+    const userId = req.params.userId;
+    const user = await User.findById(userId).select("-password"); // Exclude password from the result
 
-    // Fetch user profile from the database
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
-    res.json({ profile: "UserProfileDataHere" });
+    res.json({ profile: user });
   } catch (error) {
-    // Error handling
-    res.status(500).json({ message: "Error fetching user profile" });
+    res
+      .status(500)
+      .json({ message: "Error fetching user profile", error: error.message });
   }
 };
 
-// Function to update user profile
 exports.updateUserProfile = async (req, res) => {
   try {
-    // Extract user ID and new profile data from req
-    // Update user profile in the database
+    const userId = req.params.userId;
+    const updateData = req.body;
 
-    res.json({ message: "User profile updated" });
+    const user = await User.findByIdAndUpdate(userId, updateData, {
+      new: true,
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({ message: "User profile updated", user });
   } catch (error) {
-    // Error handling
-    res.status(500).json({ message: "Error updating user profile" });
+    res
+      .status(500)
+      .json({ message: "Error updating user profile", error: error.message });
   }
 };
 
-// Function to follow another user
 exports.followUser = async (req, res) => {
   try {
-    // Extract your user ID and the ID of the user you want to follow
-    // Implement follow logic here
+    const { userId } = req.user; // User who is performing the action
+    const targetUserId = req.params.userId; // User to be followed
+    // Check if target user exists
+    const targetUser = await User.findById(targetUserId);
+    if (!targetUser) {
+      return res.status(404).json({ message: "Target user not found" });
+    }
+
+    // Add targetUserId to the following array of userId
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $addToSet: { following: targetUserId } }, // $addToSet prevents duplicates
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Optionally, add userId to the followers array of targetUserId
+    await User.findByIdAndUpdate(
+      targetUserId,
+      { $addToSet: { followers: userId } },
+      { new: true }
+    );
 
     res.json({ message: "User followed successfully" });
   } catch (error) {
-    // Error handling
-    res.status(500).json({ message: "Error following user" });
+    res
+      .status(500)
+      .json({ message: "Error following user", error: error.message });
   }
 };
 
-// Function to unfollow another user
 exports.unfollowUser = async (req, res) => {
   try {
-    // Extract your user ID and the ID of the user you want to unfollow
-    // Implement unfollow logic here
+    const userId = req.userData.userId; // User who is performing the action
+    const targetUserId = req.params.userId; // User to be unfollowed
+
+    // Check if target user exists
+    const targetUser = await User.findById(targetUserId);
+    if (!targetUser) {
+      return res.status(404).json({ message: "Target user not found" });
+    }
+
+    // Remove targetUserId from the following array of userId
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $pull: { following: targetUserId } }, // $pull removes the targetUserId from the array
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Optionally, remove userId from the followers array of targetUserId
+    await User.findByIdAndUpdate(
+      targetUserId,
+      { $pull: { followers: userId } },
+      { new: true }
+    );
 
     res.json({ message: "User unfollowed successfully" });
   } catch (error) {
-    // Error handling
-    res.status(500).json({ message: "Error unfollowing user" });
+    res
+      .status(500)
+      .json({ message: "Error unfollowing user", error: error.message });
   }
 };

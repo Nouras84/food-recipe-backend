@@ -24,12 +24,12 @@ exports.updateCategory = async (req, res) => {
 };
 
 // Function to delete a category
-exports.deleteCategory = async (req, res) => {
-  try {
-    // Delete the category from the database using req.params.categoryId
+// exports.deleteCategory = async (req, res) => {
+//   try {
+//     // Delete the category from the database using req.params.categoryId
 
-    res.json({ message: "Category deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ message: "Error deleting category" });
-  }
-};
+//     res.json({ message: "Category deleted successfully" });
+//   } catch (error) {
+//     res.status(500).json({ message: "Error deleting category" });
+//   }
+// };
