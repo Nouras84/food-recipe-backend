@@ -18,7 +18,7 @@ exports.addCategory = async (req, res) => {
   }
 };
 
-// Function updating a category
+//
 exports.updateCategory = async (req, res) => {
   try {
     const categoryId = req.params.categoryId;
