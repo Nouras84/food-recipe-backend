@@ -1,35 +1,45 @@
-const Category = require("../models/Category"); // Adjust the path based on your project structure
+const Category = require("../models/Category"); // Make sure the path is correct
 
 // Function to add a new category
 exports.addCategory = async (req, res) => {
   try {
-    // Extract category data from req.body and create a new category
-    // Save the category to the database
+    const { name, description } = req.body;
+    const newCategory = new Category({ name, description });
 
-    res.status(201).json({ message: "Category added successfully" });
+    await newCategory.save();
+
+    res
+      .status(201)
+      .json({ message: "Category added successfully", category: newCategory });
   } catch (error) {
-    res.status(500).json({ message: "Error adding category" });
+    res
+      .status(500)
+      .json({ message: "Error adding category", error: error.message });
   }
 };
 
-// Function to update a category
+//
 exports.updateCategory = async (req, res) => {
   try {
-    // Update the category in the database using req.params.categoryId and req.body
+    const categoryId = req.params.categoryId;
+    const updateData = req.body;
 
-    res.json({ message: "Category updated successfully" });
+    const updatedCategory = await Category.findByIdAndUpdate(
+      categoryId,
+      updateData,
+      { new: true }
+    );
+    if (!updatedCategory) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+
+    res.json({
+      message: "Category updated successfully",
+      category: updatedCategory,
+    });
   } catch (error) {
-    res.status(500).json({ message: "Error updating category" });
+    res
+      .status(500)
+      .json({ message: "Error updating category", error: error.message });
   }
 };
-
-// Function to delete a category
-// exports.deleteCategory = async (req, res) => {
-//   try {
-//     // Delete the category from the database using req.params.categoryId
-
-//     res.json({ message: "Category deleted successfully" });
-//   } catch (error) {
-//     res.status(500).json({ message: "Error deleting category" });
-//   }
-// };
